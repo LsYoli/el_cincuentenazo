@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: lightgrey;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.funcion.ControladorInstrucciones">
+    <children>
+        <Button fx:id="botonRegresar" mnemonicParsing="false" onAction="#manejarBotonRegresar" prefHeight="27.0" prefWidth="39.0" text="←">
+            <font>
+                <Font name="Cooper Black" size="16.0" />
+            </font>
+            <opaqueInsets>
+                <Insets top="5.0" />
+            </opaqueInsets>
+        </Button>
+        <Label alignment="TOP_CENTER" prefHeight="46.0" prefWidth="682.0" text="¿COMO JUGAR?" textFill="RED">
+            <font>
+                <Font name="Cooper Black" size="40.0" />
+            </font>
+        </Label>
+      <ScrollPane prefHeight="310.0" prefWidth="595.0">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="411.0" prefWidth="575.0">
+               <children>
+                  <VBox prefHeight="400.0" prefWidth="576.0">
+                     <children>
+                          <Label prefHeight="52.0" prefWidth="576.0" text="✔El objetivo del juego es evitar que la suma total de las cartas en la mesa supere los 50 puntos." wrapText="true">
+                              <font>
+                                  <Font name="Cooper Black" size="14.0" />
+                              </font>
+                          </Label>
+                          <Label prefHeight="50.0" prefWidth="576.0" text="✔Al comenzar la partida, el jugador elige si desea competir contra uno, dos o tres jugadores máquina." wrapText="true">
+                              <font>
+                                  <Font name="Cooper Black" size="14.0" />
+                              </font>
+                          </Label>
+                          <Label prefHeight="50.0" prefWidth="576.0" text="✔Cada jugador recibe cuatro cartas y se coloca una carta aleatoria en la mesa, la cual inicia la suma total." wrapText="true">
+                              <font>
+                                  <Font name="Cooper Black" size="14.0" />
+                              </font>
+                          </Label>
+                          <Label prefHeight="51.0" prefWidth="576.0" text="✔Durante su turno, el jugador debe seleccionar una carta de su mano teniendo en cuenta que la suma de la mesa no puede sobrepasar 50." wrapText="true">
+                              <font>
+                                  <Font name="Cooper Black" size="14.0" />
+                              </font>
+                          </Label>
+                        <Label prefHeight="0.0" prefWidth="576.0" text="    *Las cartas del 2 al 8 y el 10 suman su valor numérico." wrapText="true">
+                           <font>
+                              <Font name="Cooper Black" size="14.0" />
+                           </font>
+                        </Label>
+                        <Label prefHeight="17.0" prefWidth="576.0" text="    *La carta número 9 no suma ni resta." wrapText="true">
+                           <font>
+                              <Font name="Cooper Black" size="14.0" />
+                           </font>
+                        </Label>
+                        <Label prefHeight="8.0" prefWidth="576.0" text="    *Las cartas J, Q y K restan 10 puntos." wrapText="true">
+                           <font>
+                              <Font name="Cooper Black" size="14.0" />
+                           </font>
+                        </Label>
+                        <Label prefHeight="39.0" prefWidth="584.0" text="    *La carta A puede sumar 1 o 10 puntos, según convenga para no superar el límite." wrapText="true">
+                           <font>
+                              <Font name="Cooper Black" size="14.0" />
+                           </font>
+                        </Label>
+                          <Label prefHeight="54.0" prefWidth="576.0" text="✔Después de jugar una carta, el jugador toma una nueva carta del mazo para mantener siempre cuatro cartas en su mano." wrapText="true">
+                              <font>
+                                  <Font name="Cooper Black" size="14.0" />
+                              </font>
+                          </Label>
+                          <Label prefHeight="58.0" prefWidth="566.0" text="✔Gana el jugador que logre mantenerse en el juego cuando todos los demás hayan sido eliminados." wrapText="true">
+                              <font>
+                                  <Font name="Cooper Black" size="14.0" />
+                              </font>
+                          </Label>
+                     </children>
+                  </VBox>
+               </children>
+            </AnchorPane>
+        </content>
+      </ScrollPane>
+    </children>
+    <padding>
+        <Insets left="5.0" top="5.0" />
+    </padding>
+</VBox>
