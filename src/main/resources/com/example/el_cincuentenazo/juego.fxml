@@ -10,7 +10,6 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="442.0" prefWidth="640.0" style="-fx-background-color: lightblue; -fx-border-color: black; -fx-border-width: 3;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <HBox prefHeight="35.0" prefWidth="600.0" style="-fx-background-color: lightgrey;">
@@ -157,6 +156,14 @@
                   <Label prefHeight="18.0" prefWidth="211.0" text="MAZO CENTRAL">
                      <font>
                         <Font name="Comic Sans MS Bold Italic" size="12.0" />
+                     </font>
+                     <padding>
+                        <Insets left="4.0" />
+                     </padding>
+                  </Label>
+                  <Label alignment="CENTER" contentDisplay="CENTER" prefHeight="42.0" prefWidth="206.0" text="puntaje: (aqui va el puntaje que tiene la mesa)" wrapText="true">
+                     <font>
+                        <Font name="Comic Sans MS Bold" size="12.0" />
                      </font>
                      <padding>
                         <Insets left="4.0" />
