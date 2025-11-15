@@ -5,4 +5,6 @@ module com.example.el_cincuentenazo {
 
     opens com.example.el_cincuentenazo to javafx.fxml;
     exports com.example.el_cincuentenazo;
+    exports com.example.el_cincuentenazo.modelo;
+    opens com.example.el_cincuentenazo.modelo to javafx.fxml;
 }
