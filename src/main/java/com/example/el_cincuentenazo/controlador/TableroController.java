@@ -1,10 +1,8 @@
 package com.example.el_cincuentenazo.controlador; // Ubica la clase dentro del paquete de controladores
 
 import com.example.el_cincuentenazo.Main; // Importa la clase principal para cambiar de escena
-import com.example.el_cincuentenazo.modelo.Carta; // Importa la clase Carta para trabajar con las manos
-import com.example.el_cincuentenazo.modelo.Jugador; // Importa la clase base Jugador para recorrer la lista de participantes
-import com.example.el_cincuentenazo.modelo.JugadorHumano; // Importa la clase específica del jugador humano
-import com.example.el_cincuentenazo.modelo.Partida; // Importa la lógica principal del juego
+import com.example.el_cincuentenazo.modelo.*;
+
 import java.util.ArrayList; // Importa la lista dinámica para guardar referencias a controles
 import java.util.List; // Importa la interfaz List utilizada en varios métodos
 import javafx.event.ActionEvent; // Importa el tipo de eventos que disparan los botones
@@ -13,6 +11,9 @@ import javafx.scene.control.Alert; // Importa la clase Alert para mostrar mensaj
 import javafx.scene.control.Button; // Importa la clase Button para manipular los botones de la interfaz
 import javafx.scene.control.Label; // Importa la clase Label para actualizar textos
 import javafx.scene.control.TextArea; // Importa TextArea para desplegar el historial
+import com.example.el_cincuentenazo.hilos.TurnoCPUThread;
+import com.example.el_cincuentenazo.hilos.AnimacionPensamientoThread;
+import javafx.application.Platform;
 
 // Controlador que mantiene sincronizada la interfaz del tablero con la lógica del juego.
 public class TableroController { // Declara la clase pública TableroController
@@ -64,6 +65,9 @@ public class TableroController { // Declara la clase pública TableroController
 
     @FXML
     private TextArea txtHistorial; // Área de texto que despliega el registro de jugadas
+
+    @FXML
+    private Label lblEstadoCPU;
 
     private Partida partida; // Referencia a la lógica de juego recibida desde Main
     private int cantidadCPUConfiguradas; // Guarda cuántas CPU se configuraron para poder reiniciar
@@ -215,28 +219,34 @@ public class TableroController { // Declara la clase pública TableroController
         jugarCartaPorIndice(3); // Intenta jugar la carta situada en el índice 3
     } // Cierra el método jugarCartaCuatro
 
-    private void jugarCartaPorIndice(int indice) { // Método auxiliar que intenta jugar la carta indicada
-        if (partida == null || partida.estaTerminada()) { // Comprueba que exista partida activa y no haya terminado
-            return; // Si no se puede jugar, simplemente finaliza el método
-        } // Cierra la comprobación de partida válida
-        JugadorHumano humano = partida.getJugadorHumano(); // Obtiene al jugador humano actual
-        List<Carta> mano = humano.getMano(); // Recupera su mano completa
-        if (indice >= mano.size()) { // Verifica que el índice solicitado exista
-            return; // Si no existe la carta, sale sin hacer nada
-        } // Cierra la comprobación del índice
-        Carta cartaSeleccionada = mano.get(indice); // Obtiene la carta elegida según el índice
-        if (!humano.puedeJugar(cartaSeleccionada, partida.getSumaMesa())) { // Verifica si la carta respeta la regla de no pasar de 50
-            mostrarAlerta("Esa carta haría superar 50 puntos. Elige otra."); // Advierte al usuario que no puede jugar esa carta
-            return; // Sale del método para evitar avanzar en el turno
-        } // Cierra la comprobación de jugada válida
-        try { // Inicia un bloque controlado para capturar errores de la lógica
-            partida.jugarTurnoHumano(cartaSeleccionada); // Aplica la jugada del humano en la lógica del juego
-            partida.jugarTurnoCPU(); // De inmediato procesa los turnos de las CPU según el flujo normal
-        } catch (IllegalArgumentException excepcion) { // Captura errores que puedan surgir en la lógica
-            mostrarAlerta(excepcion.getMessage()); // Muestra el mensaje de error al usuario para que entienda la causa
-        } // Cierra el bloque catch
-        renderizar(); // Refresca la interfaz para mostrar el nuevo estado
-    } // Cierra el método jugarCartaPorIndice
+    private void jugarCartaPorIndice(int indice) {
+        if (partida == null || partida.estaTerminada()) {
+            return;
+        }
+        JugadorHumano humano = partida.getJugadorHumano();
+        List<Carta> mano = humano.getMano();
+        if (indice >= mano.size()) {
+            return;
+        }
+        Carta cartaSeleccionada = mano.get(indice);
+        if (!humano.puedeJugar(cartaSeleccionada, partida.getSumaMesa())) {
+            mostrarAlerta("Esa carta haría superar 50 puntos. Elige otra.");
+            return;
+        }
+
+        try {
+            partida.jugarTurnoHumano(cartaSeleccionada); // Excepción marcada
+            renderizar(); // Actualiza la UI después del turno humano
+
+            // NUEVO: Lanzar los hilos para procesar turnos CPU
+            ejecutarTurnosCPUConHilos();
+
+        } catch (JugadaInvalidaException e) { // Manejo obligatorio - excepción marcada
+            mostrarAlerta(e.getMessage());
+        } catch (ConfiguracionInvalidaException e) { // Manejo opcional - excepción no marcada
+            mostrarAlerta("Error de configuración: " + e.getMessage());
+        }
+    }
 
     @FXML
     private void manejarHome(ActionEvent evento) { // Método que responde al botón de volver al inicio
@@ -252,6 +262,52 @@ public class TableroController { // Declara la clase pública TableroController
         ganadorAnunciado = false; // Restablece la bandera para permitir un nuevo anuncio al finalizar
         renderizar(); // Refresca la vista con la partida recién iniciada
     } // Cierra el método manejarRefresh
+
+    private void ejecutarTurnosCPUConHilos() {
+        // Deshabilitar botones mientras las CPUs juegan
+        for (Button boton : botonesCartas) {
+            boton.setDisable(true);
+        }
+        btnHome.setDisable(true);
+        btnRefresh.setDisable(true);
+
+        // Crear el hilo que procesa los turnos CPU
+        TurnoCPUThread turnoCPUThread = new TurnoCPUThread(partida);
+
+        // Crear el hilo que anima el texto "Pensando..."
+        AnimacionPensamientoThread animacionThread = new AnimacionPensamientoThread(lblEstadoCPU, turnoCPUThread);
+
+        // Iniciar ambos hilos
+        turnoCPUThread.start();
+        animacionThread.start();
+
+        // Crear un hilo monitor que espera a que ambos terminen
+        new Thread(() -> {
+            try {
+                turnoCPUThread.join(); // Espera a que el hilo CPU termine
+                animacionThread.join(); // Espera a que el hilo de animación termine
+
+                // Cuando ambos terminan, actualizar la UI en el hilo de JavaFX
+                Platform.runLater(() -> {
+                    // Ahora ejecutar la lógica real de las CPUs
+                    partida.jugarTurnoCPU();
+
+                    // Renderizar los cambios
+                    renderizar();
+
+                    // Rehabilitar botones
+                    for (Button boton : botonesCartas) {
+                        boton.setDisable(false);
+                    }
+                    btnHome.setDisable(false);
+                    btnRefresh.setDisable(false);
+                });
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }).start();
+    }
 
     private void mostrarAlerta(String mensaje) { // Método auxiliar para mostrar un cuadro de diálogo simple
         Alert alerta = new Alert(Alert.AlertType.INFORMATION); // Crea una alerta informativa

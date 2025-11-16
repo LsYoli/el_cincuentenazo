@@ -1,6 +1,7 @@
 package com.example.el_cincuentenazo; // Declara el paquete raíz de la aplicación
 
 import com.example.el_cincuentenazo.controlador.TableroController; // Importa el controlador del tablero para configurarlo
+import com.example.el_cincuentenazo.modelo.ConfiguracionInvalidaException;
 import com.example.el_cincuentenazo.modelo.Partida; // Importa la clase que gestiona la lógica del juego
 import javafx.application.Application; // Importa la clase base para aplicaciones JavaFX
 import javafx.fxml.FXMLLoader; // Importa el cargador de archivos FXML
@@ -52,20 +53,31 @@ public class Main extends Application { // Declara la clase Main extendiendo App
         mostrarVista("/com/example/el_cincuentenazo/principal.fxml"); // Carga nuevamente la vista principal
     } // Cierra el método abrirVistaInicio
 
-    public void abrirTablero(int cantidadCPUs) { // Método que prepara la partida y abre la vista del tablero
-        partida.iniciar(cantidadCPUs); // Inicializa la lógica del juego con la cantidad solicitada de rivales
-        try { // Inicia el bloque que puede lanzar errores de carga FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/el_cincuentenazo/juego.fxml")); // Crea el cargador con la ruta del tablero
-            Parent raiz = loader.load(); // Carga el archivo de interfaz y obtiene la raíz del nodo
-            TableroController controller = loader.getController(); // Recupera el controlador asociado al tablero
-            controller.configurarPartida(partida); // Entrega la instancia de Partida para que el tablero la utilice
-            controller.renderizar(); // Solicita al controlador que dibuje el estado inicial
-            Scene escena = new Scene(raiz); // Crea una escena con el contenido cargado
-            escenarioPrincipal.setScene(escena); // Muestra la nueva escena en la ventana principal
-        } catch (Exception e) { // Captura errores durante la carga del tablero
-            throw new RuntimeException("No se pudo abrir el tablero", e); // Envuelve la excepción para informar al desarrollador
-        } // Cierra el bloque catch
-    } // Cierra el método abrirTablero
+    public void abrirTablero(int cantidadCPUs) {
+        try {
+            partida.iniciar(cantidadCPUs); // Puede lanzar ConfiguracionInvalidaException
+        } catch (ConfiguracionInvalidaException e) {
+            // Mostrar alerta al usuario y regresar a inicio
+            javafx.scene.control.Alert alerta = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+            alerta.setTitle("Error");
+            alerta.setHeaderText("Configuración inválida");
+            alerta.setContentText(e.getMessage());
+            alerta.showAndWait();
+            return; // No abrir el tablero si hay error
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/el_cincuentenazo/juego.fxml"));
+            Parent raiz = loader.load();
+            TableroController controller = loader.getController();
+            controller.configurarPartida(partida);
+            controller.renderizar();
+            Scene escena = new Scene(raiz);
+            escenarioPrincipal.setScene(escena);
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo abrir el tablero", e);
+        }
+    }
 
     public Partida getPartida() { // Método de acceso a la instancia compartida de Partida
         return partida; // Devuelve la partida actual para consultas externas
