@@ -1,51 +1,88 @@
-package com.example.el_cincuentenazo.hilos; // Declara el nuevo paquete para hilos
+package com.example.el_cincuentenazo.hilos;
 
-import com.example.el_cincuentenazo.modelo.Carta; // Importa la clase Carta
-import com.example.el_cincuentenazo.modelo.Jugador; // Importa la clase Jugador
-import com.example.el_cincuentenazo.modelo.Partida; // Importa la clase Partida
-import java.util.Random; // Importa Random para generar tiempos aleatorios
+import com.example.el_cincuentenazo.modelo.Jugador;
+import com.example.el_cincuentenazo.modelo.Partida;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
-// Hilo que simula el procesamiento de turnos de las CPUs con delay realista
-public class TurnoCPUThread extends Thread { // Extiende Thread para crear un hilo personalizado
+/**
+ * Hilo utilitario que simula el tiempo de "pensamiento" de las CPUs antes de que la lógica real
+ * de {@link com.example.el_cincuentenazo.modelo.Partida#jugarTurnoCPU()} se ejecute. Este hilo no
+ * modifica el estado del juego: únicamente introduce una demora visual y expone qué CPU está
+ * pensando actualmente para que la interfaz pueda informarlo.
+ */
+public class TurnoCPUThread extends Thread {
 
-    private final Partida partida; // Referencia a la partida actual para acceder al estado del juego
-    private volatile boolean cpuPensando; // Bandera compartida que indica si las CPUs están procesando turnos
-    private final Random random; // Generador de números aleatorios para variar el tiempo de "pensamiento"
+    private final Partida partida;
+    private volatile boolean cpuPensando;
+    private final Random random;
+    private volatile String cpuActualPensando;
 
-    public TurnoCPUThread(Partida partida) { // Constructor que recibe la partida en curso
-        this.partida = partida; // Guarda la referencia a la partida
-        this.cpuPensando = true; // Inicializa la bandera en true porque el hilo va a comenzar a trabajar
-        this.random = new Random(); // Crea el generador de números aleatorios
-        this.setDaemon(true); // Marca este hilo como daemon para que no impida cerrar la aplicación
-    } // Cierra el constructor
+    /**
+     * Crea una nueva instancia asociada a la partida en curso. El hilo se marca como daemon para que
+     * no impida cerrar la aplicación si la ventana principal se clausura.
+     *
+     * @param partida referencia a la partida cuyos rivales automáticos se van a simular.
+     */
+    public TurnoCPUThread(Partida partida) {
+        this.partida = partida;
+        this.cpuPensando = true;
+        this.random = new Random();
+        this.cpuActualPensando = null;
+        this.setDaemon(true);
+    }
 
+    /**
+     * Recorre las CPUs activas y simula un tiempo de espera entre dos y cuatro segundos por cada
+     * una. Antes de dormir el hilo actualiza {@link #cpuActualPensando} para que otros componentes
+     * puedan mostrar qué CPU está siendo procesada.
+     */
     @Override
-    public void run() { // Método que se ejecuta cuando el hilo inicia
-        try { // Bloque para manejar posibles interrupciones del sleep
-            // Cuenta cuántas CPUs activas hay (que no estén eliminadas)
-            int cpusActivas = 0; // Contador de CPUs que aún pueden jugar
-            for (int i = 1; i < partida.getJugadores().size(); i++) { // Recorre todas las CPUs
-                if (!partida.getJugadores().get(i).estaEliminado()) { // Si la CPU no está eliminada
-                    cpusActivas++; // Incrementa el contador
-                } // Cierra la comprobación
-            } // Cierra el bucle de conteo
+    public void run() {
+        try {
+            List<Jugador> cpusActivas = new ArrayList<>();
+            for (int i = 1; i < partida.getJugadores().size(); i++) {
+                Jugador candidato = partida.getJugadores().get(i);
+                if (!candidato.estaEliminado()) {
+                    cpusActivas.add(candidato);
+                }
+            }
 
-            // Simula el "pensamiento" total de todas las CPUs
-            // Cada CPU toma entre 2 y 4 segundos
-            for (int i = 0; i < cpusActivas && !partida.estaTerminada(); i++) { // Por cada CPU activa
-                int tiempoPensamiento = 2000 + random.nextInt(2001); // Genera tiempo aleatorio entre 2000-4000 ms
-                Thread.sleep(tiempoPensamiento); // Pausa el hilo simulando que la CPU piensa
-            } // Cierra el bucle de delays
+            for (Jugador cpu : cpusActivas) {
+                if (partida.estaTerminada()) {
+                    break;
+                }
+                cpuActualPensando = cpu.getNombre();
+                int tiempoPensamiento = 2000 + random.nextInt(2001);
+                Thread.sleep(tiempoPensamiento);
+            }
 
-        } catch (InterruptedException e) { // Captura la excepción si el hilo es interrumpido
-            Thread.currentThread().interrupt(); // Restablece el estado de interrupción
-            System.err.println("TurnoCPUThread interrumpido: " + e.getMessage()); // Imprime mensaje de error
-        } finally { // Bloque que siempre se ejecuta
-            cpuPensando = false; // Marca que las CPUs terminaron de pensar
-        } // Cierra el bloque finally
-    } // Cierra el método run
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("TurnoCPUThread interrumpido: " + e.getMessage());
+        } finally {
+            cpuPensando = false;
+            cpuActualPensando = null;
+        }
+    }
 
-    public boolean estaPensando() { // Método para consultar si las CPUs aún están procesando
-        return cpuPensando; // Retorna el estado actual de la bandera
-    } // Cierra el método estaPensando
-} // Cierra la clase TurnoCPUThread
+    /**
+     * Indica si el hilo continúa simulando el pensamiento de alguna CPU.
+     *
+     * @return {@code true} mientras reste al menos una CPU por simular.
+     */
+    public boolean estaPensando() {
+        return cpuPensando;
+    }
+
+    /**
+     * Devuelve el nombre de la CPU cuya espera se está simulando actualmente. Puede ser {@code null}
+     * si todavía no comenzó el ciclo o si el hilo ya finalizó.
+     *
+     * @return nombre legible de la CPU en proceso, o {@code null} si no corresponde.
+     */
+    public String getCpuActualPensando() {
+        return cpuActualPensando;
+    }
+}

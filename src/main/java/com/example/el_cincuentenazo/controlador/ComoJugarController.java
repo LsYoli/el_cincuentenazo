@@ -1,18 +1,25 @@
-package com.example.el_cincuentenazo.controlador; // Declara el paquete del controlador de instrucciones
+package com.example.el_cincuentenazo.controlador;
 
-import com.example.el_cincuentenazo.Main; // Importa la clase principal para cambiar de escena
-import javafx.event.ActionEvent; // Importa el tipo de evento asociado a los botones
-import javafx.fxml.FXML; // Importa la anotación FXML para vincular componentes del diseño
-import javafx.scene.control.Button; // Importa la clase Button para manipular el botón regresar
+import com.example.el_cincuentenazo.Main;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 
-// Controlador responsable de la vista "Cómo jugar".
-public class ComoJugarController { // Declara la clase pública ComoJugarController
+/**
+ * Controlador de la vista de instrucciones "Cómo jugar".
+ */
+public class ComoJugarController {
 
     @FXML
-    private Button botonRegresar; // Referencia al botón que regresa a la vista de inicio
+    private Button botonRegresar;
 
+    /**
+     * Vuelve a la pantalla principal cuando se presiona el botón.
+     *
+     * @param evento evento generado por el botón
+     */
     @FXML
-    private void manejarBotonRegresar(ActionEvent evento) { // Método que responde cuando se presiona el botón regresar
-        Main.obtenerInstancia().abrirVistaInicio(); // Solicita a la clase principal que muestre nuevamente la pantalla inicial
-    } // Cierra el método manejarBotonRegresar
-} // Cierra la clase ComoJugarController
+    private void manejarBotonRegresar(ActionEvent evento) {
+        Main.obtenerInstancia().abrirVistaInicio();
+    }
+}

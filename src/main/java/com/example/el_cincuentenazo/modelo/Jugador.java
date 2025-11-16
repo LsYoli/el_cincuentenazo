@@ -1,70 +1,124 @@
-package com.example.el_cincuentenazo.modelo; // Define el paquete para las clases del modelo
+package com.example.el_cincuentenazo.modelo;
 
-import java.util.ArrayList; // Importa la lista dinámica para almacenar cartas
-import java.util.Collections; // Importa utilidades para trabajar con listas inmutables
-import java.util.List; // Importa la interfaz de lista
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-// Clase abstracta que encapsula la lógica común de cualquier jugador.
-public abstract class Jugador { // Declara la clase abstracta Jugador
+/**
+ * Clase base para cualquier jugador del cincuentenazo. Mantiene el nombre, la
+ * mano de cartas y el estado de eliminación, y proporciona operaciones comunes
+ * para manipular esa información.
+ */
+public abstract class Jugador {
 
-    protected final String nombre; // Guarda el nombre que se mostrará en pantalla
-    protected final List<Carta> mano; // Lista que contiene las cartas actuales del jugador
-    protected boolean eliminado; // Bandera que indica si el jugador sigue en la partida
+    /** Nombre que se mostrará para identificar al jugador. */
+    protected final String nombre;
+    /** Cartas que posee el jugador en un momento dado. */
+    protected final List<Carta> mano;
+    /** Bandera que indica si el jugador salió de la partida. */
+    protected boolean eliminado;
 
-    protected Jugador(String nombre) { // Constructor protegido para evitar instanciación directa fuera de la jerarquía
-        this.nombre = nombre; // Asigna el nombre recibido al atributo correspondiente
-        this.mano = new ArrayList<>(); // Inicializa la lista de cartas vacía
-        this.eliminado = false; // Marca al jugador como activo al inicio
-    } // Cierra el constructor de Jugador
+    /**
+     * Crea un nuevo jugador con su nombre y una mano vacía.
+     *
+     * @param nombre etiqueta que identifica al jugador dentro de la interfaz
+     */
+    protected Jugador(String nombre) {
+        this.nombre = nombre;
+        this.mano = new ArrayList<>();
+        this.eliminado = false;
+    }
 
-    public String getNombre() { // Método que expone el nombre del jugador
-        return nombre; // Devuelve el nombre almacenado
-    } // Cierra el método getNombre
+    /**
+     * Obtiene el nombre visible del jugador.
+     *
+     * @return nombre definido al crear la instancia
+     */
+    public String getNombre() {
+        return nombre;
+    }
 
-    public boolean estaEliminado() { // Método que indica si el jugador está eliminado
-        return eliminado; // Retorna el estado de eliminación actual
-    } // Cierra el método estaEliminado
+    /**
+     * Informa si el jugador sigue participando de la partida.
+     *
+     * @return {@code true} si fue eliminado anteriormente
+     */
+    public boolean estaEliminado() {
+        return eliminado;
+    }
 
-    public List<Carta> getMano() { // Método que devuelve una vista inmutable de la mano
-        return Collections.unmodifiableList(mano); // Devuelve una lista que no puede modificarse desde afuera
-    } // Cierra el método getMano
+    /**
+     * Devuelve una vista inmutable de las cartas que posee el jugador.
+     *
+     * @return lista inmodificable con la mano actual
+     */
+    public List<Carta> getMano() {
+        return Collections.unmodifiableList(mano);
+    }
 
-    public void obtenerCartasIniciales(Baraja baraja) { // Método que reparte cuatro cartas al comienzo de la partida
-        mano.clear(); // Asegura que la mano esté vacía antes de repartir
-        for (int i = 0; i < 4; i++) { // Itera cuatro veces para entregar cada carta inicial
-            Carta carta = baraja.robar(); // Extrae una carta del mazo principal
-            if (carta != null) { // Verifica que la baraja aún tenga cartas
-                mano.add(carta); // Agrega la carta obtenida a la mano del jugador
-            } // Cierra la comprobación de carta nula
-        } // Cierra el ciclo de reparto
-    } // Cierra el método obtenerCartasIniciales
+    /**
+     * Entrega cuatro cartas iniciales tomadas de la baraja, siempre que haya
+     * disponibilidad.
+     *
+     * @param baraja mazo desde el cual se reparten las cartas
+     */
+    public void obtenerCartasIniciales(Baraja baraja) {
+        mano.clear();
+        for (int i = 0; i < 4; i++) {
+            Carta carta = baraja.robar();
+            if (carta != null) {
+                mano.add(carta);
+            }
+        }
+    }
 
-    public List<Carta> cartasJugables(int sumaMesa) { // Método que identifica las cartas seguras para jugar
-        List<Carta> jugables = new ArrayList<>(); // Crea una lista temporal para guardar las cartas válidas
-        for (Carta carta : mano) { // Recorre todas las cartas disponibles en la mano
-            int valor = carta.valorParaSuma(sumaMesa); // Calcula el impacto de la carta sobre la mesa actual
-            if (sumaMesa + valor <= 50) { // Verifica si jugarla mantiene la suma en 50 o menos
-                jugables.add(carta); // Si la carta es segura, se agrega a la lista
-            } // Cierra la comprobación de seguridad
-        } // Cierra el recorrido de la mano
-        return jugables; // Devuelve la lista con las cartas que se pueden jugar
-    } // Cierra el método cartasJugables
+    /**
+     * Calcula qué cartas pueden jugarse sin que la suma supere el límite de 50.
+     *
+     * @param sumaMesa valor actual acumulado en la mesa
+     * @return lista con las cartas seguras para jugar
+     */
+    public List<Carta> cartasJugables(int sumaMesa) {
+        List<Carta> jugables = new ArrayList<>();
+        for (Carta carta : mano) {
+            int valor = carta.valorParaSuma(sumaMesa);
+            if (sumaMesa + valor <= 50) {
+                jugables.add(carta);
+            }
+        }
+        return jugables;
+    }
 
-    public abstract Carta jugarCarta(int sumaMesa); // Declaración abstracta que obliga a definir cómo juega cada tipo de jugador
+    /**
+     * Define la estrategia de cada tipo de jugador para decidir qué carta jugar.
+     *
+     * @param sumaMesa valor actual en la mesa
+     * @return carta escogida para la jugada
+     */
+    public abstract Carta jugarCarta(int sumaMesa);
 
-    public void robarSiHaceFalta(Baraja baraja) { // Método que garantiza que el jugador conserve cuatro cartas si es posible
-        while (mano.size() < 4 && !baraja.estaVacia()) { // Repite mientras falten cartas y el mazo tenga disponibles
-            Carta carta = baraja.robar(); // Toma una nueva carta del mazo principal
-            if (carta != null) { // Confirma que realmente se obtuvo una carta
-                mano.add(carta); // Agrega la carta a la mano
-            } else { // Si no se obtuvo carta
-                break; // Sale del ciclo porque no hay más cartas que tomar
-            } // Cierra el bloque alternativo
-        } // Cierra el ciclo de robo
-    } // Cierra el método robarSiHaceFalta
+    /**
+     * Repone cartas hasta completar cuatro, siempre que la baraja aún disponga
+     * de unidades.
+     *
+     * @param baraja mazo desde el cual se roba
+     */
+    public void robarSiHaceFalta(Baraja baraja) {
+        while (mano.size() < 4 && !baraja.estaVacia()) {
+            Carta carta = baraja.robar();
+            if (carta != null) {
+                mano.add(carta);
+            } else {
+                break;
+            }
+        }
+    }
 
-    public void eliminar() { // Método que marca al jugador como fuera del juego
-        eliminado = true; // Cambia la bandera para indicar que ya no participa
-        mano.clear(); // Vacía la mano para liberar cartas
-    } // Cierra el método eliminar
-} // Cierra la clase abstracta Jugador
+    /**
+     * Marca al jugador como eliminado y libera sus cartas actuales.
+     */
+    public void eliminar() {
+        eliminado = true;
+        mano.clear();
+    }
+}

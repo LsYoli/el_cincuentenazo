@@ -1,46 +1,63 @@
-package com.example.el_cincuentenazo.hilos; // Declara el paquete de hilos
+package com.example.el_cincuentenazo.hilos;
 
-import javafx.application.Platform; // Importa Platform para actualizar la UI desde hilos secundarios
-import javafx.scene.control.Label; // Importa Label para manipular el texto animado
+import javafx.application.Platform;
+import javafx.scene.control.Label;
 
-// Hilo que anima el texto "Pensando..." mientras las CPUs procesan sus turnos
-public class AnimacionPensamientoThread extends Thread { // Extiende Thread para crear el hilo de animación
+/**
+ * Hilo auxiliar que alterna el texto mostrado en la etiqueta de estado de las CPUs para simular
+ * actividad mientras {@link TurnoCPUThread} introduce una espera artificial.
+ */
+public class AnimacionPensamientoThread extends Thread {
 
-    private final Label labelEstado; // Referencia al Label donde se mostrará la animación
-    private final TurnoCPUThread turnoCPUThread; // Referencia al hilo de las CPUs para saber cuándo detenerse
-    private final String[] estados = {"CPU pensando", "CPU pensando.", "CPU pensando..", "CPU pensando..."}; // Ciclo de textos para la animación
-    private int indiceEstado; // Índice actual en el array de estados
+    private final Label labelEstado;
+    private final Label labelTurno;
+    private final TurnoCPUThread turnoCPUThread;
+    private final String[] sufijos = {"", ".", "..", "..."};
+    private int indiceEstado;
 
-    public AnimacionPensamientoThread(Label labelEstado, TurnoCPUThread turnoCPUThread) { // Constructor que recibe el label y el hilo CPU
-        this.labelEstado = labelEstado; // Guarda la referencia al label
-        this.turnoCPUThread = turnoCPUThread; // Guarda la referencia al hilo CPU
-        this.indiceEstado = 0; // Inicializa el índice en 0
-        this.setDaemon(true); // Marca como daemon para que no bloquee el cierre de la aplicación
-    } // Cierra el constructor
+    /**
+     * Construye el hilo de animación y lo marca como daemon para no impedir que la aplicación se
+     * cierre si la ventana principal desaparece.
+     *
+     * @param labelEstado etiqueta que se actualizará.
+     * @param labelTurno etiqueta utilizada para indicar en pantalla de quién es el turno.
+     * @param turnoCPUThread hilo que indica cuánto tiempo debe continuar la animación.
+     */
+    public AnimacionPensamientoThread(Label labelEstado, Label labelTurno, TurnoCPUThread turnoCPUThread) {
+        this.labelEstado = labelEstado;
+        this.labelTurno = labelTurno;
+        this.turnoCPUThread = turnoCPUThread;
+        this.indiceEstado = 0;
+        this.setDaemon(true);
+    }
 
+    /**
+     * Mientras {@link TurnoCPUThread} informe que las CPUs siguen "pensando", alterna el texto
+     * mostrado con el nombre de la CPU actualmente simulada.
+     */
     @Override
-    public void run() { // Método que se ejecuta cuando el hilo inicia
-        try { // Bloque para manejar interrupciones
-            while (turnoCPUThread.estaPensando()) { // Mientras las CPUs sigan procesando turnos
-                final String textoActual = estados[indiceEstado]; // Obtiene el texto correspondiente al índice actual
+    public void run() {
+        try {
+            while (turnoCPUThread.estaPensando()) {
+                final String nombreCPU = turnoCPUThread.getCpuActualPensando();
+                final String cpuMostrada = nombreCPU == null ? "CPU" : nombreCPU;
+                final String textoActual = cpuMostrada + " pensando" + sufijos[indiceEstado];
+                final String textoTurno = "Turno de " + cpuMostrada;
 
-                Platform.runLater(() -> { // Ejecuta la actualización de UI en el hilo de JavaFX
-                    labelEstado.setText(textoActual); // Cambia el texto del label
-                }); // Cierra el runLater
+                Platform.runLater(() -> {
+                    labelEstado.setText(textoActual);
+                    labelTurno.setText(textoTurno);
+                });
 
-                indiceEstado = (indiceEstado + 1) % estados.length; // Avanza al siguiente estado (con ciclo)
+                indiceEstado = (indiceEstado + 1) % sufijos.length;
+                Thread.sleep(500);
+            }
 
-                Thread.sleep(500); // Espera medio segundo antes de cambiar al siguiente texto
-            } // Cierra el while
+            Platform.runLater(() -> labelEstado.setText(""));
 
-            // Cuando termina, limpia el label
-            Platform.runLater(() -> { // Actualiza la UI una última vez
-                labelEstado.setText(""); // Limpia el texto del label
-            }); // Cierra el runLater
-
-        } catch (InterruptedException e) { // Captura si el hilo es interrumpido
-            Thread.currentThread().interrupt(); // Restablece el estado de interrupción
-            Platform.runLater(() -> labelEstado.setText("")); // Limpia el label incluso si hay error
-        } // Cierra el bloque catch
-    } // Cierra el método run
-} // Cierra la clase AnimacionPensamientoThread
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Platform.runLater(() -> labelEstado.setText(""));
+        }
+    }
+}

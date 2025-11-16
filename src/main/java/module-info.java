@@ -1,3 +1,6 @@
+/**
+ * Módulo principal que expone los paquetes del juego El Cincuentenazo.
+ */
 module com.example.el_cincuentenazo {
     requires javafx.controls;
     requires javafx.fxml;

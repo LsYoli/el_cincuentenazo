@@ -1,107 +1,164 @@
-package com.example.el_cincuentenazo.modelo; // Ubica la clase Partida dentro del paquete de modelo
+package com.example.el_cincuentenazo.modelo;
 
-import java.util.ArrayList; // Importa la lista dinámica para manejar colecciones
-import java.util.Collections; // Importa utilidades para listas inmutables
-import java.util.HashMap; // Importa la implementación HashMap para asociaciones clave-valor
-import java.util.List; // Importa la interfaz List
-import java.util.Map; // Importa la interfaz Map para los registros de cartas
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-// Clase que coordina todo el flujo del juego Cincuentazo.
-public class Partida { // Declara la clase pública Partida
+/**
+ * Coordina el flujo completo de una partida del cincuentenazo, incluyendo la
+ * administración de barajas, jugadores, turnos e historial de jugadas.
+ */
+public class Partida {
 
-    public static final String RUTA_BARAJA = "cartas.txt"; // Ruta del archivo de cartas dentro de los recursos
+    /** Ruta del archivo que contiene la definición textual de las cartas. */
+    public static final String RUTA_BARAJA = "cartas.txt";
 
-    private final JugadorHumano jugadorHumano; // Referencia al jugador humano principal
-    private final List<Jugador> jugadores; // Lista ordenada con el humano seguido de las CPU
-    private final Baraja barajaComer; // Baraja principal desde la que se roban cartas
-    private final Baraja barajaMesa; // Baraja secundaria que actúa como pila de descarte
-    private final List<String> historial; // Registro de los eventos importantes de la partida
-    private final Map<Jugador, Carta> ultimaCartaPorJugador; // Mapa que almacena la última carta jugada por cada participante
+    private final JugadorHumano jugadorHumano;
+    private final List<Jugador> jugadores;
+    private final Baraja barajaComer;
+    private final Baraja barajaMesa;
+    private final List<String> historial;
+    private final Map<Jugador, Carta> ultimaCartaPorJugador;
 
-    private int sumaMesa; // Acumulado de puntos que hay actualmente en la mesa
-    private int turnoActual; // Índice del jugador cuyo turno se está procesando
-    private Carta ultimaCartaMesa; // Carta más reciente que se colocó en la mesa
+    private int sumaMesa;
+    private int turnoActual;
+    private Carta ultimaCartaMesa;
 
-    public Partida() { // Constructor que prepara las estructuras necesarias
-        this.jugadorHumano = new JugadorHumano("Jugador"); // Crea al jugador humano con un nombre genérico
-        this.jugadores = new ArrayList<>(); // Crea la lista vacía de jugadores
-        this.barajaComer = new Baraja(RUTA_BARAJA); // Carga la baraja principal desde archivo o por defecto
-        this.barajaMesa = new Baraja(RUTA_BARAJA); // Crea otra baraja que se usará como pila de descarte
-        this.barajaMesa.vaciar(); // Vacía la baraja de la mesa porque se reutiliza como contenedor
-        this.historial = new ArrayList<>(); // Prepara la lista del historial de jugadas
-        this.ultimaCartaPorJugador = new HashMap<>(); // Inicializa el mapa de cartas jugadas por jugador
-        this.sumaMesa = 0; // Inicializa la suma de la mesa en cero
-        this.turnoActual = 0; // Fija el turno actual en el primer jugador
-        this.ultimaCartaMesa = null; // Indica que todavía no se ha jugado ninguna carta
-    } // Cierra el constructor de Partida
+    /**
+     * Construye una partida dejando listas las estructuras necesarias.
+     */
+    public Partida() {
+        this.jugadorHumano = new JugadorHumano("Jugador");
+        this.jugadores = new ArrayList<>();
+        this.barajaComer = new Baraja(RUTA_BARAJA);
+        this.barajaMesa = new Baraja(RUTA_BARAJA);
+        this.barajaMesa.vaciar();
+        this.historial = new ArrayList<>();
+        this.ultimaCartaPorJugador = new HashMap<>();
+        this.sumaMesa = 0;
+        this.turnoActual = 0;
+        this.ultimaCartaMesa = null;
+    }
 
+    /**
+     * Reinicia la partida con la cantidad de CPUs solicitada.
+     *
+     * @param cantidadCPUs número de rivales automáticos (1 a 3)
+     */
     public void iniciar(int cantidadCPUs) {
         if (cantidadCPUs < 1 || cantidadCPUs > 3) {
             throw new ConfiguracionInvalidaException("La cantidad de CPUs debe estar entre 1 y 3");
-        }// Método que reinicia la partida con una cantidad específica de rivales automáticos
-        jugadores.clear(); // Limpia cualquier jugador de partidas anteriores
-        historial.clear(); // Borra el historial para empezar desde cero
-        ultimaCartaPorJugador.clear(); // Resetea el registro de cartas jugadas
-        barajaComer.cargarDesdeArchivo(RUTA_BARAJA); // Recarga las cartas desde el archivo configurado
-        barajaComer.barajar(); // Baraja las cartas para obtener un orden aleatorio
-        barajaMesa.vaciar(); // Deja vacía la pila de descarte para la nueva partida
-        jugadorHumano.eliminado = false; // Marca al humano como activo por si se había eliminado antes
-        jugadores.add(jugadorHumano); // Agrega al humano como primer participante en la lista
-        for (int i = 1; i <= cantidadCPUs; i++) { // Repite según la cantidad de CPUs solicitadas
-            CPU cpu = new CPU("CPU " + i); // Crea una nueva CPU numerada para identificarla en la interfaz
-            jugadores.add(cpu); // Agrega la CPU recién creada a la lista de jugadores
-        } // Cierra el ciclo de creación de CPU
-        for (Jugador jugador : jugadores) { // Reparte cartas iniciales a cada jugador activo
-            jugador.eliminado = false; // Garantiza que cada jugador esté marcado como activo
-            jugador.obtenerCartasIniciales(barajaComer); // Entrega cuatro cartas a cada jugador desde la baraja principal
-            ultimaCartaPorJugador.put(jugador, null); // Inicializa el registro de última carta para cada participante
-        } // Cierra el ciclo de reparto inicial
-        Carta cartaInicial = barajaComer.robar(); // Obtiene la carta que quedará boca arriba al iniciar la mesa
-        if (cartaInicial == null) { // Comprueba que realmente se haya obtenido una carta
-            throw new IllegalStateException("La baraja no tiene cartas para iniciar la mesa"); // Lanza un error si la baraja estaba vacía, lo cual no debería ocurrir
-        } // Cierra la comprobación de carta inicial nula
-        barajaMesa.poner(cartaInicial); // Coloca la carta inicial en la pila de descarte
-        ultimaCartaMesa = cartaInicial; // Actualiza la referencia de la última carta jugada
-        sumaMesa = cartaInicial.valorParaSuma(0); // Calcula la suma inicial tomando la carta como primer valor
-        historial.add("Comienza la partida con " + cartaInicial + ". Suma: " + sumaMesa + "."); // Registra el inicio en el historial
-        turnoActual = 0; // Asegura que el turno empiece en el jugador humano
-    } // Cierra el método iniciar
+        }
+        jugadores.clear();
+        historial.clear();
+        ultimaCartaPorJugador.clear();
+        barajaComer.cargarDesdeArchivo(RUTA_BARAJA);
+        barajaComer.barajar();
+        barajaMesa.vaciar();
+        jugadorHumano.eliminado = false;
+        jugadores.add(jugadorHumano);
+        for (int i = 1; i <= cantidadCPUs; i++) {
+            jugadores.add(new CPU("CPU " + i));
+        }
+        for (Jugador jugador : jugadores) {
+            jugador.eliminado = false;
+            jugador.obtenerCartasIniciales(barajaComer);
+            ultimaCartaPorJugador.put(jugador, null);
+        }
+        Carta cartaInicial = barajaComer.robar();
+        if (cartaInicial == null) {
+            throw new IllegalStateException("La baraja no tiene cartas para iniciar la mesa");
+        }
+        barajaMesa.poner(cartaInicial);
+        ultimaCartaMesa = cartaInicial;
+        sumaMesa = cartaInicial.valorParaSuma(0);
+        historial.add("Comienza la partida con " + cartaInicial + ". Suma: " + sumaMesa + ".");
+        turnoActual = 0;
+    }
 
-    public JugadorHumano getJugadorHumano() { // Método que expone al jugador humano para la interfaz
-        return jugadorHumano; // Devuelve la referencia al jugador humano
-    } // Cierra el método getJugadorHumano
+    /**
+     * Devuelve al jugador humano principal.
+     *
+     * @return referencia al jugador controlado por la persona
+     */
+    public JugadorHumano getJugadorHumano() {
+        return jugadorHumano;
+    }
 
-    public List<Jugador> getJugadores() { // Método que permite consultar la lista de jugadores
-        return Collections.unmodifiableList(jugadores); // Devuelve una vista inmutable para evitar modificaciones externas
-    } // Cierra el método getJugadores
+    /**
+     * Obtiene la lista completa de jugadores en orden de turno.
+     *
+     * @return vista inmutable de los jugadores
+     */
+    public List<Jugador> getJugadores() {
+        return Collections.unmodifiableList(jugadores);
+    }
 
-    public int getSumaMesa() { // Método que informa el puntaje acumulado en la mesa
-        return sumaMesa; // Devuelve el valor actual de la suma de la mesa
-    } // Cierra el método getSumaMesa
+    /**
+     * Expone la suma actual de la mesa.
+     *
+     * @return valor acumulado
+     */
+    public int getSumaMesa() {
+        return sumaMesa;
+    }
 
-    public Carta getUltimaCartaMesa() { // Método que devuelve la carta jugada más recientemente
-        return ultimaCartaMesa; // Retorna la referencia a la carta que está a la vista
-    } // Cierra el método getUltimaCartaMesa
+    /**
+     * Devuelve la carta que se encuentra visible sobre la mesa.
+     *
+     * @return última carta jugada
+     */
+    public Carta getUltimaCartaMesa() {
+        return ultimaCartaMesa;
+    }
 
-    public List<String> getHistorial() { // Método que expone el historial de jugadas
-        return Collections.unmodifiableList(historial); // Entrega una vista inmutable para preservarlo
-    } // Cierra el método getHistorial
+    /**
+     * Proporciona una vista del historial de eventos.
+     *
+     * @return lista inmutable con las entradas registradas
+     */
+    public List<String> getHistorial() {
+        return Collections.unmodifiableList(historial);
+    }
 
-    public Carta obtenerUltimaCartaDe(Jugador jugador) { // Método que informa cuál fue la última carta jugada por un participante
-        return ultimaCartaPorJugador.get(jugador); // Devuelve la carta asociada en el mapa o null si no ha jugado
-    } // Cierra el método obtenerUltimaCartaDe
+    /**
+     * Obtiene la última carta jugada por un participante.
+     *
+     * @param jugador jugador consultado
+     * @return carta jugada o {@code null} si aún no registró jugadas
+     */
+    public Carta obtenerUltimaCartaDe(Jugador jugador) {
+        return ultimaCartaPorJugador.get(jugador);
+    }
 
-    public boolean humanoTieneJugada() { // Método que evalúa si el humano conserva alguna jugada válida
-        return !jugadorHumano.cartasJugables(sumaMesa).isEmpty(); // Devuelve verdadero si al menos una carta puede jugarse sin superar 50
-    } // Cierra el método humanoTieneJugada
+    /**
+     * Indica si el jugador humano conserva jugadas disponibles.
+     *
+     * @return {@code true} si al menos una carta es segura
+     */
+    public boolean humanoTieneJugada() {
+        return !jugadorHumano.cartasJugables(sumaMesa).isEmpty();
+    }
 
-    public void eliminarHumanoPorFaltaDeJugadas() { // Método que elimina al humano cuando no puede jugar más
-        if (!jugadorHumano.estaEliminado()) { // Comprueba que aún siga activo
-            jugadorHumano.eliminar(); // Marca al jugador humano como eliminado
-            historial.add(jugadorHumano.getNombre() + " no tiene jugadas y queda eliminado."); // Registra el motivo en el historial
-        } // Cierra la comprobación de estado activo
-    } // Cierra el método eliminarHumanoPorFaltaDeJugadas
+    /**
+     * Marca al humano como eliminado cuando no puede jugar más cartas.
+     */
+    public void eliminarHumanoPorFaltaDeJugadas() {
+        if (!jugadorHumano.estaEliminado()) {
+            jugadorHumano.eliminar();
+            historial.add(jugadorHumano.getNombre() + " no tiene jugadas y queda eliminado.");
+        }
+    }
 
+    /**
+     * Procesa la jugada del humano, validando la carta seleccionada.
+     *
+     * @param cartaElegida carta tomada desde la interfaz
+     * @throws JugadaInvalidaException si la jugada no es posible o la partida ya
+     *                                 terminó
+     */
     public void jugarTurnoHumano(Carta cartaElegida) throws JugadaInvalidaException {
         if (estaTerminada()) {
             throw new JugadaInvalidaException("No se puede jugar, la partida ya terminó");
@@ -112,94 +169,117 @@ public class Partida { // Declara la clase pública Partida
         Carta cartaJugada = jugadorHumano.jugarCartaElegida(cartaElegida, sumaMesa);
         if (cartaJugada == null) {
             throw new JugadaInvalidaException("La carta seleccionada haría superar 50 puntos");
-        }// Cierra la comprobación de carta inválida
-        int valor = cartaJugada.valorParaSuma(sumaMesa); // Calcula cuánto aporta la carta jugada al total
-        sumaMesa += valor; // Actualiza el acumulado con el valor recién jugado
-        barajaMesa.poner(cartaJugada); // Coloca la carta en la pila de descarte
-        ultimaCartaMesa = cartaJugada; // Actualiza la referencia a la última carta visible
-        ultimaCartaPorJugador.put(jugadorHumano, cartaJugada); // Registra la carta como la última jugada por el humano
-        historial.add(jugadorHumano.getNombre() + " juega " + cartaJugada + ". Suma: " + sumaMesa + "."); // Registra la jugada en el historial
-        reciclarSiHaceFalta(); // Comprueba si se necesita reciclar la mesa hacia la baraja
-        jugadorHumano.robarSiHaceFalta(barajaComer); // Permite que el humano reponga su mano si hay cartas
-        turnoActual = 1; // Avanza el turno para que comiencen a jugar las CPU
-    } // Cierra el método jugarTurnoHumano
+        }
+        int valor = cartaJugada.valorParaSuma(sumaMesa);
+        sumaMesa += valor;
+        barajaMesa.poner(cartaJugada);
+        ultimaCartaMesa = cartaJugada;
+        ultimaCartaPorJugador.put(jugadorHumano, cartaJugada);
+        historial.add(jugadorHumano.getNombre() + " juega " + cartaJugada + ". Suma: " + sumaMesa + ".");
+        reciclarSiHaceFalta();
+        jugadorHumano.robarSiHaceFalta(barajaComer);
+        turnoActual = 1;
+    }
 
-    public void jugarTurnoCPU() { // Método que ejecuta la secuencia de turnos de todos los rivales automáticos
-        for (int i = 1; i < jugadores.size(); i++) { // Recorre la lista de jugadores comenzando por la primera CPU
-            Jugador jugador = jugadores.get(i); // Obtiene la CPU actual
-            turnoActual = i; // Actualiza el turno actual con el índice correspondiente
-            if (jugador.estaEliminado()) { // Revisa si la CPU ya está fuera del juego
-                continue; // Si está eliminada se pasa directamente al siguiente participante
-            } // Cierra la comprobación de eliminación
-            if (estaTerminada()) { // Si la partida ya terminó, no se siguen procesando turnos
-                break; // Abandona el ciclo porque ya hay un ganador
-            } // Cierra la comprobación de finalización
-            Carta carta = jugador.jugarCarta(sumaMesa); // Solicita a la CPU que elija una carta válida si la tiene
-            if (carta == null) { // Si no devuelve carta significa que no puede jugar
-                jugador.eliminar(); // Marca a la CPU como eliminada
-                historial.add(jugador.getNombre() + " no puede jugar y queda eliminado."); // Registra la eliminación en el historial
-                continue; // Continúa con la siguiente CPU
-            } // Cierra la comprobación de jugada nula
-            int valor = carta.valorParaSuma(sumaMesa); // Calcula el valor de la carta jugada
-            sumaMesa += valor; // Actualiza la suma de la mesa con la jugada de la CPU
-            barajaMesa.poner(carta); // Envía la carta a la pila de descarte
-            ultimaCartaMesa = carta; // Actualiza cuál es la carta visible
-            ultimaCartaPorJugador.put(jugador, carta); // Actualiza la carta más reciente asociada a la CPU
-            historial.add(jugador.getNombre() + " juega " + carta + ". Suma: " + sumaMesa + "."); // Registra la jugada en el historial
-            reciclarSiHaceFalta(); // Verifica si se necesita reciclar la mesa
-            jugador.robarSiHaceFalta(barajaComer); // Permite que la CPU reponga su mano con nuevas cartas
-            if (estaTerminada()) { // Comprueba si después de la jugada la partida terminó
-                break; // Sale del ciclo si ya hay un resultado definitivo
-            } // Cierra la comprobación de fin de partida
-        } // Cierra el recorrido de las CPU
-        turnoActual = 0; // Devuelve el turno al jugador humano para la siguiente ronda
-    } // Cierra el método jugarTurnoCPU
+    /**
+     * Ejecuta los turnos consecutivos de todas las CPU activas.
+     */
+    public void jugarTurnoCPU() {
+        for (int i = 1; i < jugadores.size(); i++) {
+            Jugador jugador = jugadores.get(i);
+            turnoActual = i;
+            if (jugador.estaEliminado()) {
+                continue;
+            }
+            if (estaTerminada()) {
+                break;
+            }
+            Carta carta = jugador.jugarCarta(sumaMesa);
+            if (carta == null) {
+                jugador.eliminar();
+                historial.add(jugador.getNombre() + " no puede jugar y queda eliminado.");
+                continue;
+            }
+            int valor = carta.valorParaSuma(sumaMesa);
+            sumaMesa += valor;
+            barajaMesa.poner(carta);
+            ultimaCartaMesa = carta;
+            ultimaCartaPorJugador.put(jugador, carta);
+            historial.add(jugador.getNombre() + " juega " + carta + ". Suma: " + sumaMesa + ".");
+            reciclarSiHaceFalta();
+            jugador.robarSiHaceFalta(barajaComer);
+            if (estaTerminada()) {
+                break;
+            }
+        }
+        turnoActual = 0;
+    }
 
-    public void reciclarSiHaceFalta() { // Método que mueve cartas de la mesa a la baraja cuando esta se agota
-        if (!barajaComer.estaVacia()) { // Si aún quedan cartas para robar no es necesario reciclar
-            return; // Sale del método sin hacer nada
-        } // Cierra la comprobación de baraja con cartas
-        if (barajaMesa.tamano() <= 1) { // Verifica que haya al menos dos cartas en la mesa para poder reciclar
-            return; // Si hay cero o una carta no se puede reciclar nada
-        } // Cierra la comprobación de cantidad suficiente
-        Carta ultima = barajaMesa.sacarUltimaCarta(); // Guarda temporalmente la carta visible para conservarla en la mesa
-        List<Carta> recicladas = new ArrayList<>(); // Crea una lista para almacenar las cartas que regresarán a la baraja
-        Carta carta; // Variable temporal para iterar sobre las cartas del descarte
-        while ((carta = barajaMesa.robar()) != null) { // Extrae cada carta de la mesa hasta vaciarla
-            recicladas.add(carta); // Agrega la carta retirada a la lista temporal
-        } // Cierra el ciclo de extracción de cartas de la mesa
-        for (Carta reciclada : recicladas) { // Recorre la lista de cartas para devolverlas a la baraja principal
-            barajaComer.poner(reciclada); // Coloca cada carta en la baraja principal
-        } // Cierra el ciclo de reingreso a la baraja
-        barajaComer.barajar(); // Baraja nuevamente para mezclar las cartas recicladas
-        barajaMesa.vaciar(); // Vacía la pila de descarte para colocar la carta visible nuevamente
-        barajaMesa.poner(ultima); // Devuelve la carta visible a la mesa
-        historial.add("Se recicla la mesa. La carta visible es " + ultima + "."); // Registra el reciclaje en el historial
-    } // Cierra el método reciclarSiHaceFalta
+    /**
+     * Transfiere cartas de la mesa a la baraja cuando esta última se queda sin
+     * cartas para robar.
+     */
+    public void reciclarSiHaceFalta() {
+        if (!barajaComer.estaVacia()) {
+            return;
+        }
+        if (barajaMesa.tamano() <= 1) {
+            return;
+        }
+        Carta ultima = barajaMesa.sacarUltimaCarta();
+        List<Carta> recicladas = new ArrayList<>();
+        Carta carta;
+        while ((carta = barajaMesa.robar()) != null) {
+            recicladas.add(carta);
+        }
+        for (Carta reciclada : recicladas) {
+            barajaComer.poner(reciclada);
+        }
+        barajaComer.barajar();
+        barajaMesa.vaciar();
+        barajaMesa.poner(ultima);
+        historial.add("Se recicla la mesa. La carta visible es " + ultima + ".");
+    }
 
-    public boolean estaTerminada() { // Método que indica si la partida llegó a su fin
-        int jugadoresActivos = 0; // Contador de jugadores aún en competencia
-        for (Jugador jugador : jugadores) { // Recorre todos los participantes
-            if (!jugador.estaEliminado()) { // Verifica si el jugador sigue activo
-                jugadoresActivos++; // Incrementa el conteo de jugadores activos
-            } // Cierra la comprobación de estado activo
-        } // Cierra el recorrido de jugadores
-        if (jugadoresActivos <= 1) { // Si queda uno o ninguno, la partida termina
-            return true; // Devuelve verdadero porque ya hay ganador definido
-        } // Cierra la comprobación de jugadores activos
-        return jugadorHumano.estaEliminado(); // Si el humano salió de la partida también se considera finalizada
-    } // Cierra el método estaTerminada
+    /**
+     * Indica si la partida ya terminó.
+     *
+     * @return {@code true} cuando solo queda un jugador o el humano fue
+     *         eliminado
+     */
+    public boolean estaTerminada() {
+        int jugadoresActivos = 0;
+        for (Jugador jugador : jugadores) {
+            if (!jugador.estaEliminado()) {
+                jugadoresActivos++;
+            }
+        }
+        if (jugadoresActivos <= 1) {
+            return true;
+        }
+        return jugadorHumano.estaEliminado();
+    }
 
-    public Jugador ganador() { // Método que devuelve al ganador una vez que la partida termina
-        for (Jugador jugador : jugadores) { // Recorre todos los participantes
-            if (!jugador.estaEliminado()) { // Busca al primero que siga activo
-                return jugador; // Devuelve ese jugador como el ganador
-            } // Cierra la comprobación de estado activo
-        } // Cierra el recorrido completo
-        return null; // Si todos están eliminados (caso teórico) devuelve null
-    } // Cierra el método ganador
+    /**
+     * Devuelve al ganador una vez concluida la partida.
+     *
+     * @return jugador aún activo o {@code null} si ninguno quedó en pie
+     */
+    public Jugador ganador() {
+        for (Jugador jugador : jugadores) {
+            if (!jugador.estaEliminado()) {
+                return jugador;
+            }
+        }
+        return null;
+    }
 
-    public int getTurnoActual() { // Método que informa el índice del turno actual
-        return turnoActual; // Devuelve el índice que se está usando en la ronda
-    } // Cierra el método getTurnoActual
-} // Cierra la clase Partida
+    /**
+     * Indica el índice del turno actualmente en ejecución.
+     *
+     * @return índice dentro de la lista de jugadores
+     */
+    public int getTurnoActual() {
+        return turnoActual;
+    }
+}
