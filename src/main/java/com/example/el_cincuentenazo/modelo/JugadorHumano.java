@@ -31,4 +31,3 @@ public class JugadorHumano extends Jugador { // Declara la clase JugadorHumano h
         return carta; // Devuelve la carta jugada para que la partida la procese
     } // Cierra el método jugarCartaElegida
 } // Cierra la clase JugadorHumano
-

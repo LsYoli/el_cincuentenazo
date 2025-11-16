@@ -35,7 +35,10 @@ public class Partida { // Declara la clase pública Partida
         this.ultimaCartaMesa = null; // Indica que todavía no se ha jugado ninguna carta
     } // Cierra el constructor de Partida
 
-    public void iniciar(int cantidadCPUs) { // Método que reinicia la partida con una cantidad específica de rivales automáticos
+    public void iniciar(int cantidadCPUs) {
+        if (cantidadCPUs < 1 || cantidadCPUs > 3) {
+            throw new ConfiguracionInvalidaException("La cantidad de CPUs debe estar entre 1 y 3");
+        }// Método que reinicia la partida con una cantidad específica de rivales automáticos
         jugadores.clear(); // Limpia cualquier jugador de partidas anteriores
         historial.clear(); // Borra el historial para empezar desde cero
         ultimaCartaPorJugador.clear(); // Resetea el registro de cartas jugadas
@@ -99,17 +102,17 @@ public class Partida { // Declara la clase pública Partida
         } // Cierra la comprobación de estado activo
     } // Cierra el método eliminarHumanoPorFaltaDeJugadas
 
-    public void jugarTurnoHumano(Carta cartaElegida) { // Método que procesa la carta elegida por la persona
-        if (estaTerminada()) { // Verifica si la partida ya terminó
-            return; // Si está terminada, no se hace nada
-        } // Cierra la comprobación de partida terminada
-        if (cartaElegida == null) { // Comprueba que se haya recibido una carta válida
-            throw new IllegalArgumentException("Debe seleccionarse una carta válida"); // Lanza un error para informar al controlador
-        } // Cierra la comprobación de carta nula
-        Carta cartaJugada = jugadorHumano.jugarCartaElegida(cartaElegida, sumaMesa); // Intenta jugar la carta en nombre del humano
-        if (cartaJugada == null) { // Si el método devuelve null significa que no se pudo jugar
-            throw new IllegalArgumentException("La carta seleccionada no es válida para la suma actual"); // Informa que el movimiento es inválido
-        } // Cierra la comprobación de carta inválida
+    public void jugarTurnoHumano(Carta cartaElegida) throws JugadaInvalidaException {
+        if (estaTerminada()) {
+            throw new JugadaInvalidaException("No se puede jugar, la partida ya terminó");
+        }
+        if (cartaElegida == null) {
+            throw new JugadaInvalidaException("Debe seleccionarse una carta válida");
+        }
+        Carta cartaJugada = jugadorHumano.jugarCartaElegida(cartaElegida, sumaMesa);
+        if (cartaJugada == null) {
+            throw new JugadaInvalidaException("La carta seleccionada haría superar 50 puntos");
+        }// Cierra la comprobación de carta inválida
         int valor = cartaJugada.valorParaSuma(sumaMesa); // Calcula cuánto aporta la carta jugada al total
         sumaMesa += valor; // Actualiza el acumulado con el valor recién jugado
         barajaMesa.poner(cartaJugada); // Coloca la carta en la pila de descarte

@@ -10,7 +10,7 @@ import javafx.scene.control.ChoiceBox; // Importa ChoiceBox para elegir la canti
 import javafx.scene.control.Label; // Importa Label para mostrar textos dinámicos
 
 // Controlador de la pantalla inicial donde se configura la partida.
-public class inicioController { // Declara la clase pública InicioController
+public class InicioController { // Declara la clase pública InicioController
 
     @FXML
     private Button botonJugar; // Referencia al botón que inicia la partida

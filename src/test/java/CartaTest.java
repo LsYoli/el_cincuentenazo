@@ -1,116 +1,94 @@
+
+
 import com.example.el_cincuentenazo.modelo.Carta;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Pruebas unitarias para la clase Carta.
- * Verifica el comportamiento de los diferentes valores de cartas
- * y sus contribuciones a la suma de la mesa.
- */
-@DisplayName("Tests para la clase Carta")
+@DisplayName("Pruebas unitarias para la clase Carta")
 class CartaTest {
 
-    private Carta cartaAs;
-    private Carta carta5;
-    private Carta carta9;
-    private Carta cartaJ;
-    private Carta cartaQ;
-    private Carta cartaK;
+    @Test
+    @DisplayName("Constructor debe crear carta con valor y palo correctos")
+    void testConstructor() {
+        Carta carta = new Carta("A", "corazones");
 
-    @BeforeEach
-    void setUp() {
-        cartaAs = new Carta("A", "corazones");
-        carta5 = new Carta("5", "picas");
-        carta9 = new Carta("9", "tréboles");
-        cartaJ = new Carta("J", "diamantes");
-        cartaQ = new Carta("Q", "corazones");
-        cartaK = new Carta("K", "picas");
+        assertEquals("A", carta.getValor());
+        assertEquals("corazones", carta.getPalo());
     }
 
     @Test
-    @DisplayName("Una carta debe tener el palo correcto")
-    void testGetPalo() {
-        assertEquals("corazones", cartaAs.getPalo());
-        assertEquals("picas", carta5.getPalo());
-        assertEquals("tréboles", carta9.getPalo());
+    @DisplayName("As debe valer 10 cuando no excede 50")
+    void testAsValeDiez() {
+        Carta as = new Carta("A", "picas");
+
+        assertEquals(10, as.valorParaSuma(30));
+        assertEquals(10, as.valorParaSuma(40));
     }
 
     @Test
-    @DisplayName("Una carta debe tener el valor correcto")
-    void testGetValor() {
-        assertEquals("A", cartaAs.getValor());
-        assertEquals("5", carta5.getValor());
-        assertEquals("9", carta9.getValor());
+    @DisplayName("As debe valer 1 cuando 10 excedería 50")
+    void testAsValeUno() {
+        Carta as = new Carta("A", "tréboles");
+
+        assertEquals(1, as.valorParaSuma(41));
+        assertEquals(1, as.valorParaSuma(45));
+        assertEquals(1, as.valorParaSuma(50));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "J, 20, -10",
+            "Q, 35, -10",
+            "K, 40, -10"
+    })
+    @DisplayName("Figuras (J, Q, K) deben restar 10 puntos")
+    void testFigurasRestanDiez(String valor, int sumaActual, int esperado) {
+        Carta figura = new Carta(valor, "diamantes");
+
+        assertEquals(esperado, figura.valorParaSuma(sumaActual));
     }
 
     @Test
-    @DisplayName("Las cartas numéricas deben sumar su valor")
-    void testCartasNumericasSumanSuValor() {
-        assertEquals(5, carta5.valorParaSuma(10));
-        assertEquals(5, carta5.valorParaSuma(45));
+    @DisplayName("El 9 debe valer 0 puntos")
+    void testNueveValeCero() {
+        Carta nueve = new Carta("9", "corazones");
 
-        Carta carta2 = new Carta("2", "picas");
-        assertEquals(2, carta2.valorParaSuma(20));
+        assertEquals(0, nueve.valorParaSuma(25));
+        assertEquals(0, nueve.valorParaSuma(50));
+    }
 
-        Carta carta10 = new Carta("10", "diamantes");
-        assertEquals(10, carta10.valorParaSuma(15));
+    @ParameterizedTest
+    @CsvSource({
+            "2, 10, 2",
+            "3, 20, 3",
+            "5, 15, 5",
+            "7, 30, 7",
+            "10, 25, 10"
+    })
+    @DisplayName("Cartas numéricas deben sumar su valor nominal")
+    void testCartasNumericas(String valor, int sumaActual, int esperado) {
+        Carta carta = new Carta(valor, "picas");
+
+        assertEquals(esperado, carta.valorParaSuma(sumaActual));
     }
 
     @Test
-    @DisplayName("La carta 9 debe sumar cero")
-    void testCarta9SumaCero() {
-        assertEquals(0, carta9.valorParaSuma(0));
-        assertEquals(0, carta9.valorParaSuma(25));
-        assertEquals(0, carta9.valorParaSuma(49));
-    }
-
-    @Test
-    @DisplayName("Las cartas J, Q, K deben restar 10")
-    void testCartasFiguraRestanDiez() {
-        assertEquals(-10, cartaJ.valorParaSuma(30));
-        assertEquals(-10, cartaQ.valorParaSuma(45));
-        assertEquals(-10, cartaK.valorParaSuma(20));
-    }
-
-    @Test
-    @DisplayName("El As debe sumar 10 cuando no exceda 50")
-    void testAsSumaDiezSiNoPasa50() {
-        assertEquals(10, cartaAs.valorParaSuma(0));
-        assertEquals(10, cartaAs.valorParaSuma(30));
-        assertEquals(10, cartaAs.valorParaSuma(40));
-    }
-
-    @Test
-    @DisplayName("El As debe sumar 1 cuando 10 excedería 50")
-    void testAsSumaUnoSiPasaria50() {
-        assertEquals(1, cartaAs.valorParaSuma(41));
-        assertEquals(1, cartaAs.valorParaSuma(45));
-        assertEquals(1, cartaAs.valorParaSuma(49));
-    }
-
-    @Test
-    @DisplayName("El As en el límite exacto (40) debe sumar 10")
-    void testAsEnLimiteExacto() {
-        assertEquals(10, cartaAs.valorParaSuma(40));
-    }
-
-    @Test
-    @DisplayName("toString debe mostrar el formato correcto")
+    @DisplayName("toString debe retornar formato 'valor de palo'")
     void testToString() {
-        assertEquals("A de corazones", cartaAs.toString());
-        assertEquals("5 de picas", carta5.toString());
-        assertEquals("J de diamantes", cartaJ.toString());
+        Carta carta = new Carta("K", "diamantes");
+
+        assertEquals("K de diamantes", carta.toString());
     }
 
     @Test
-    @DisplayName("Las cartas con diferentes palos pero mismo valor deben comportarse igual")
-    void testMismoValorDiferentePalo() {
-        Carta as1 = new Carta("A", "corazones");
-        Carta as2 = new Carta("A", "picas");
+    @DisplayName("As en el límite exacto debe preferir valor 10")
+    void testAsEnLimite() {
+        Carta as = new Carta("A", "tréboles");
 
-        assertEquals(as1.valorParaSuma(30), as2.valorParaSuma(30));
-        assertEquals(as1.valorParaSuma(45), as2.valorParaSuma(45));
+        assertEquals(10, as.valorParaSuma(40)); // 40 + 10 = 50 (permitido)
+        assertEquals(1, as.valorParaSuma(41));  // 41 + 10 = 51 (excede)
     }
 }
